@@ -13,20 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.example.android.sunshine.sync;
 
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
+import android.net.Uri;
 import android.text.format.DateUtils;
+import android.util.Log;
 
+import com.example.android.sunshine.IConstants;
 import com.example.android.sunshine.data.SunshinePreferences;
 import com.example.android.sunshine.data.WeatherContract;
 import com.example.android.sunshine.utilities.NetworkUtils;
 import com.example.android.sunshine.utilities.NotificationUtils;
 import com.example.android.sunshine.utilities.OpenWeatherJsonUtils;
+import com.example.android.sunshine.utilities.SunshineDateUtils;
+import com.example.android.sunshine.utilities.SunshineWeatherUtils;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.PutDataMapRequest;
+import com.google.android.gms.wearable.PutDataRequest;
+import com.google.android.gms.wearable.Wearable;
 
 import java.net.URL;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 public class SunshineSyncTask {
 
@@ -53,7 +69,7 @@ public class SunshineSyncTask {
 
             /* Parse the JSON into a list of weather values */
             ContentValues[] weatherValues = OpenWeatherJsonUtils
-                    .getWeatherContentValuesFromJson(context, jsonWeatherResponse);
+                .getWeatherContentValuesFromJson(context, jsonWeatherResponse);
 
             /*
              * In cases where our JSON contained an error code, getWeatherContentValuesFromJson
@@ -67,14 +83,14 @@ public class SunshineSyncTask {
 
                 /* Delete old weather data because we don't need to keep multiple days' data */
                 sunshineContentResolver.delete(
-                        WeatherContract.WeatherEntry.CONTENT_URI,
-                        null,
-                        null);
+                    WeatherContract.WeatherEntry.CONTENT_URI,
+                    null,
+                    null);
 
                 /* Insert our new weather data into Sunshine's ContentProvider */
                 sunshineContentResolver.bulkInsert(
-                        WeatherContract.WeatherEntry.CONTENT_URI,
-                        weatherValues);
+                    WeatherContract.WeatherEntry.CONTENT_URI,
+                    weatherValues);
 
                 /*
                  * Finally, after we insert data into the ContentProvider, determine whether or not
@@ -88,7 +104,7 @@ public class SunshineSyncTask {
                  * it's important that you shouldn't spam your users with notifications.
                  */
                 long timeSinceLastNotification = SunshinePreferences
-                        .getEllapsedTimeSinceLastNotification(context);
+                    .getEllapsedTimeSinceLastNotification(context);
 
                 boolean oneDayPassedSinceLastNotification = false;
 
@@ -106,11 +122,68 @@ public class SunshineSyncTask {
 
             /* If the code reaches this point, we have successfully performed our sync */
 
+                //Sync data with wearable
+                sendDataToWearable(context);
             }
-
         } catch (Exception e) {
             /* Server probably invalid */
             e.printStackTrace();
         }
+    }
+
+    public static void sendDataToWearable(Context context) {
+        // Connect Google API client
+        GoogleApiClient googleApiClient = new GoogleApiClient.Builder(context)
+            .addApi(Wearable.API)
+            .build();
+
+        // Get result of Google API Client Connection
+        ConnectionResult connectionResult = googleApiClient.blockingConnect(30, TimeUnit.SECONDS);
+        if (!connectionResult.isSuccess()) {
+            return;
+        }
+
+
+        Uri todaysWeatherUri = WeatherContract.WeatherEntry
+            .buildWeatherUriWithDate(SunshineDateUtils.normalizeDate(System.currentTimeMillis()));
+
+        /*
+         * The MAIN_FORECAST_PROJECTION array passed in as the second parameter is defined in our WeatherContract
+         * class and is used to limit the columns returned in our cursor.
+         */
+        Cursor cursor = context.getContentResolver().query(
+            todaysWeatherUri,
+            IConstants.WEATHER_NOTIFICATION_PROJECTION,
+            null,
+            null,
+            null);
+
+        if (cursor.moveToFirst()) {
+            int weatherId = cursor.getInt(IConstants.INDEX_WEATHER_ID);
+            double high = cursor.getDouble(IConstants.INDEX_MAX_TEMP);
+            double low = cursor.getDouble(IConstants.INDEX_MIN_TEMP);
+
+            PutDataMapRequest dataMap = PutDataMapRequest.create(IConstants.PATH_WITH_FEATURE);
+            dataMap.getDataMap().putLong("time", new Date().getTime());  //Requires as if the data doesn't change, then Wearable API doesnt send the data to wear. This forces the data to be sent each time.
+            dataMap.getDataMap().putInt(IConstants.WEATHER_IMAGE_PATH, weatherId);
+            //One advantage of using formattedHighlows is that, it will automatically change the watch high/low data to celsius / fahrenheit when the settings changes on app.
+            dataMap.getDataMap().putString(IConstants.WEATHER_FORMATTED_HIGH_LOW, SunshineWeatherUtils.formatHighLows(context, high, low));
+            PutDataRequest request = dataMap.asPutDataRequest();
+            request.setUrgent();
+
+            Wearable.DataApi.putDataItem(googleApiClient, request)
+                .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
+                    @Override
+                    public void onResult(DataApi.DataItemResult dataItemResult) {
+                        if (!dataItemResult.getStatus().isSuccess()) {
+                            Log.d("SunshineSyncTask", "Failed to send item");
+                        } else {
+                            Log.d("SunshineSyncTask", "Successfully send item");
+                        }
+                    }
+                });
+        }
+
+        cursor.close();
     }
 }

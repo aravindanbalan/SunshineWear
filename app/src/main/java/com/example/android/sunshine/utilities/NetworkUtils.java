@@ -34,6 +34,7 @@ import java.util.Scanner;
 public final class NetworkUtils {
 
     private static final String TAG = NetworkUtils.class.getSimpleName();
+    public static final String OPEN_WEATHER_MAP_API_KEY = "<API_KEY>";
 
     /*
      * Sunshine was originally built to use OpenWeatherMap's API. However, we wanted to provide
@@ -52,7 +53,7 @@ public final class NetworkUtils {
             "https://andfun-weather.udacity.com/weather";
 
     private static final String STATIC_WEATHER_URL =
-            "https://andfun-weather.udacity.com/staticweather";
+            "http://api.openweathermap.org/data/2.5/forecast/daily?";
 
     private static final String FORECAST_BASE_URL = STATIC_WEATHER_URL;
 
@@ -82,6 +83,7 @@ public final class NetworkUtils {
     private static final String UNITS_PARAM = "units";
     /* The days parameter allows us to designate how many days of weather data we want */
     private static final String DAYS_PARAM = "cnt";
+    static final String APPID_PARAM = "APPID";
 
     /**
      * Retrieves the proper URL to query for the weather data. The reason for both this method as
@@ -124,11 +126,12 @@ public final class NetworkUtils {
                 .appendQueryParameter(FORMAT_PARAM, format)
                 .appendQueryParameter(UNITS_PARAM, units)
                 .appendQueryParameter(DAYS_PARAM, Integer.toString(numDays))
-                .build();
+                .appendQueryParameter(APPID_PARAM, OPEN_WEATHER_MAP_API_KEY)
+            .build();
 
         try {
             URL weatherQueryUrl = new URL(weatherQueryUri.toString());
-            Log.v(TAG, "URL: " + weatherQueryUrl);
+            Log.i(TAG, "URL: " + weatherQueryUrl);
             return weatherQueryUrl;
         } catch (MalformedURLException e) {
             e.printStackTrace();
@@ -149,7 +152,8 @@ public final class NetworkUtils {
                 .appendQueryParameter(FORMAT_PARAM, format)
                 .appendQueryParameter(UNITS_PARAM, units)
                 .appendQueryParameter(DAYS_PARAM, Integer.toString(numDays))
-                .build();
+                .appendQueryParameter(APPID_PARAM, OPEN_WEATHER_MAP_API_KEY)
+            .build();
 
         try {
             URL weatherQueryUrl = new URL(weatherQueryUri.toString());
