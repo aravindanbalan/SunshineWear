@@ -13,12 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.example.android.sunshine;
 
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
@@ -34,11 +40,24 @@ import android.widget.ProgressBar;
 
 import com.example.android.sunshine.data.SunshinePreferences;
 import com.example.android.sunshine.data.WeatherContract;
+import com.example.android.sunshine.sync.SunshineSyncTask;
 import com.example.android.sunshine.sync.SunshineSyncUtils;
+import com.example.android.sunshine.utilities.SunshineDateUtils;
+import com.example.android.sunshine.utilities.SunshineWeatherUtils;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.wearable.Asset;
+import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.PutDataMapRequest;
+import com.google.android.gms.wearable.PutDataRequest;
+import com.google.android.gms.wearable.Wearable;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity implements
-        LoaderManager.LoaderCallbacks<Cursor>,
-        ForecastAdapter.ForecastAdapterOnClickHandler {
+    LoaderManager.LoaderCallbacks<Cursor>,
+    ForecastAdapter.ForecastAdapterOnClickHandler {
 
     private final String TAG = MainActivity.class.getSimpleName();
 
@@ -47,10 +66,10 @@ public class MainActivity extends AppCompatActivity implements
      * weather data.
      */
     public static final String[] MAIN_FORECAST_PROJECTION = {
-            WeatherContract.WeatherEntry.COLUMN_DATE,
-            WeatherContract.WeatherEntry.COLUMN_MAX_TEMP,
-            WeatherContract.WeatherEntry.COLUMN_MIN_TEMP,
-            WeatherContract.WeatherEntry.COLUMN_WEATHER_ID,
+        WeatherContract.WeatherEntry.COLUMN_DATE,
+        WeatherContract.WeatherEntry.COLUMN_MAX_TEMP,
+        WeatherContract.WeatherEntry.COLUMN_MIN_TEMP,
+        WeatherContract.WeatherEntry.COLUMN_WEATHER_ID,
     };
 
     /*
@@ -78,7 +97,6 @@ public class MainActivity extends AppCompatActivity implements
     private int mPosition = RecyclerView.NO_POSITION;
 
     private ProgressBar mLoadingIndicator;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -116,7 +134,7 @@ public class MainActivity extends AppCompatActivity implements
          * right-to-left layout.
          */
         LinearLayoutManager layoutManager =
-                new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
+            new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
 
         /* setLayoutManager associates the LayoutManager we created above with our RecyclerView */
         mRecyclerView.setLayoutManager(layoutManager);
@@ -142,7 +160,6 @@ public class MainActivity extends AppCompatActivity implements
         /* Setting the adapter attaches it to the RecyclerView in our layout. */
         mRecyclerView.setAdapter(mForecastAdapter);
 
-
         showLoading();
 
         /*
@@ -153,7 +170,22 @@ public class MainActivity extends AppCompatActivity implements
         getSupportLoaderManager().initLoader(ID_FORECAST_LOADER, null, this);
 
         SunshineSyncUtils.initialize(this);
+    }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        //Sync with wearable whenever the activity resumes
+        AsyncTask<Void, Void, Void> sendToWearableTask = new AsyncTask<Void, Void, Void>(){
+            @Override
+            protected Void doInBackground(Void... voids) {
+                Context context = getApplicationContext();
+                SunshineSyncTask.sendDataToWearable(context);
+                return null;
+            }
+        };
+        sendToWearableTask.execute();
     }
 
     /**
@@ -188,7 +220,7 @@ public class MainActivity extends AppCompatActivity implements
      * loaderId, but this is certainly best practice.
      *
      * @param loaderId The loader ID for which we need to create a loader
-     * @param bundle   Any arguments supplied by the caller
+     * @param bundle Any arguments supplied by the caller
      * @return A new Loader instance that is ready to start loading.
      */
     @Override
@@ -210,11 +242,11 @@ public class MainActivity extends AppCompatActivity implements
                 String selection = WeatherContract.WeatherEntry.getSqlSelectForTodayOnwards();
 
                 return new CursorLoader(this,
-                        forecastQueryUri,
-                        MAIN_FORECAST_PROJECTION,
-                        selection,
-                        null,
-                        sortOrder);
+                    forecastQueryUri,
+                    MAIN_FORECAST_PROJECTION,
+                    selection,
+                    null,
+                    sortOrder);
 
             default:
                 throw new RuntimeException("Loader Not Implemented: " + loaderId);
@@ -223,23 +255,25 @@ public class MainActivity extends AppCompatActivity implements
 
     /**
      * Called when a Loader has finished loading its data.
-     *
+     * <p>
      * NOTE: There is one small bug in this code. If no data is present in the cursor do to an
      * initial load being performed with no access to internet, the loading indicator will show
      * indefinitely, until data is present from the ContentProvider. This will be fixed in a
      * future version of the course.
      *
      * @param loader The Loader that has finished.
-     * @param data   The data generated by the Loader.
+     * @param data The data generated by the Loader.
      */
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
 
-
+        Log.i(TAG, "********* on load finished");
         mForecastAdapter.swapCursor(data);
         if (mPosition == RecyclerView.NO_POSITION) mPosition = 0;
         mRecyclerView.smoothScrollToPosition(mPosition);
-        if (data.getCount() != 0) showWeatherDataView();
+        if (data.getCount() != 0) {
+            showWeatherDataView();
+        }
     }
 
     /**
@@ -303,10 +337,8 @@ public class MainActivity extends AppCompatActivity implements
      * This is where we inflate and set up the menu for this Activity.
      *
      * @param menu The options menu in which you place your items.
-     *
      * @return You must return true for the menu to be displayed;
-     *         if you return false it will not be shown.
-     *
+     * if you return false it will not be shown.
      * @see #onPrepareOptionsMenu
      * @see #onOptionsItemSelected
      */
@@ -324,7 +356,6 @@ public class MainActivity extends AppCompatActivity implements
      * Callback invoked when a menu item was selected from this Activity's menu.
      *
      * @param item The menu item that was selected by the user
-     *
      * @return true if you handle the menu click here, false otherwise
      */
     @Override

@@ -16,10 +16,16 @@
 package com.example.android.sunshine.utilities;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.util.Log;
 
 import com.example.android.sunshine.R;
 import com.example.android.sunshine.data.SunshinePreferences;
+import com.google.android.gms.wearable.Asset;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 /**
  * Contains useful utilities for a weather app, such as conversion between Celsius and Fahrenheit,
@@ -415,5 +421,24 @@ public final class SunshineWeatherUtils {
 
         Log.e(LOG_TAG, "Unknown Weather: " + weatherId);
         return R.drawable.art_storm;
+    }
+
+    public static Asset toAsset(Context context, int resourceId) {
+        Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), resourceId);
+
+        ByteArrayOutputStream byteStream = null;
+        try {
+            byteStream = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteStream);
+            return Asset.createFromBytes(byteStream.toByteArray());
+        } finally {
+            if (null != byteStream) {
+                try {
+                    byteStream.close();
+                } catch (IOException e) {
+                    // ignore
+                }
+            }
+        }
     }
 }

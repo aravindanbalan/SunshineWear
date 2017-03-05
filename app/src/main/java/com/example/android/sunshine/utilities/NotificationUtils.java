@@ -14,31 +14,12 @@ import android.support.v4.app.TaskStackBuilder;
 import android.support.v4.content.ContextCompat;
 
 import com.example.android.sunshine.DetailActivity;
+import com.example.android.sunshine.IConstants;
 import com.example.android.sunshine.R;
 import com.example.android.sunshine.data.SunshinePreferences;
 import com.example.android.sunshine.data.WeatherContract;
 
 public class NotificationUtils {
-
-    /*
-     * The columns of data that we are interested in displaying within our notification to let
-     * the user know there is new weather data available.
-     */
-    public static final String[] WEATHER_NOTIFICATION_PROJECTION = {
-            WeatherContract.WeatherEntry.COLUMN_WEATHER_ID,
-            WeatherContract.WeatherEntry.COLUMN_MAX_TEMP,
-            WeatherContract.WeatherEntry.COLUMN_MIN_TEMP,
-    };
-
-    /*
-     * We store the indices of the values in the array of Strings above to more quickly be able
-     * to access the data from our query. If the order of the Strings above changes, these
-     * indices must be adjusted to match the order of the Strings.
-     */
-    public static final int INDEX_WEATHER_ID = 0;
-    public static final int INDEX_MAX_TEMP = 1;
-    public static final int INDEX_MIN_TEMP = 2;
-
     /*
      * This notification ID can be used to access our notification after we've displayed it. This
      * can be handy when we need to cancel the notification, or perhaps update it. This number is
@@ -63,7 +44,7 @@ public class NotificationUtils {
          */
         Cursor todayWeatherCursor = context.getContentResolver().query(
                 todaysWeatherUri,
-                WEATHER_NOTIFICATION_PROJECTION,
+            IConstants.WEATHER_NOTIFICATION_PROJECTION,
                 null,
                 null,
                 null);
@@ -75,9 +56,9 @@ public class NotificationUtils {
         if (todayWeatherCursor.moveToFirst()) {
 
             /* Weather ID as returned by API, used to identify the icon to be used */
-            int weatherId = todayWeatherCursor.getInt(INDEX_WEATHER_ID);
-            double high = todayWeatherCursor.getDouble(INDEX_MAX_TEMP);
-            double low = todayWeatherCursor.getDouble(INDEX_MIN_TEMP);
+            int weatherId = todayWeatherCursor.getInt(IConstants.INDEX_WEATHER_ID);
+            double high = todayWeatherCursor.getDouble(IConstants.INDEX_MAX_TEMP);
+            double low = todayWeatherCursor.getDouble(IConstants.INDEX_MIN_TEMP);
 
             Resources resources = context.getResources();
             int largeArtResourceId = SunshineWeatherUtils

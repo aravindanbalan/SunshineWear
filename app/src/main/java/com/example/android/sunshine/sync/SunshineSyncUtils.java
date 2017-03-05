@@ -42,6 +42,11 @@ public class SunshineSyncUtils {
     private static final int SYNC_INTERVAL_SECONDS = (int) TimeUnit.HOURS.toSeconds(SYNC_INTERVAL_HOURS);
     private static final int SYNC_FLEXTIME_SECONDS = SYNC_INTERVAL_SECONDS / 3;
 
+//    FIXME JUST FOR TESTING PURPOSES. IDEALLY IT CAN BE CALLED EVERY 3 HOURS AS BEFORE
+//    private static final int SYNC_INTERVAL_HOURS = 1;  //Making it to 3 minutes for testing
+//    private static final int SYNC_INTERVAL_SECONDS = (int) TimeUnit.MINUTES.toSeconds(SYNC_INTERVAL_HOURS);
+//    private static final int SYNC_FLEXTIME_SECONDS = SYNC_INTERVAL_SECONDS / 3;
+
     private static boolean sInitialized;
 
     private static final String SUNSHINE_SYNC_TAG = "sunshine-sync";
@@ -52,7 +57,6 @@ public class SunshineSyncUtils {
      *                FirebaseJobDispatcher
      */
     static void scheduleFirebaseJobDispatcherSync(@NonNull final Context context) {
-
         Driver driver = new GooglePlayDriver(context);
         FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(driver);
 
@@ -166,9 +170,7 @@ public class SunshineSyncUtils {
                  * If the Cursor was null OR if it was empty, we need to sync immediately to
                  * be able to display data to the user.
                  */
-                if (null == cursor || cursor.getCount() == 0) {
-                    startImmediateSync(context);
-                }
+                startImmediateSync(context);
 
                 /* Make sure to close the Cursor to avoid memory leaks! */
                 cursor.close();
