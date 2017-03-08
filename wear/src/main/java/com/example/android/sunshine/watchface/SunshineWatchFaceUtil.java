@@ -18,35 +18,14 @@ package com.example.android.sunshine.watchface;
 
 import android.graphics.Color;
 
-public final class DigitalWatchFaceUtil {
-    private static final String TAG = "DigitalWatchFaceUtil";
-
-    /**
-     * The color name must be a {@link String} recognized by {@link Color#parseColor}.
-     */
-    public static final String KEY_BACKGROUND_COLOR = "BACKGROUND_COLOR";
-
-    /**
-     * The color name must be a {@link String} recognized by {@link Color#parseColor}.
-     */
-    public static final String KEY_HOURS_COLOR = "HOURS_COLOR";
-
-    /**
-     * The color name must be a {@link String} recognized by {@link Color#parseColor}.
-     */
-    public static final String KEY_MINUTES_COLOR = "MINUTES_COLOR";
-
-    /**
-     * The color name must be a {@link String} recognized by {@link Color#parseColor}.
-     */
-    public static final String KEY_SECONDS_COLOR = "SECONDS_COLOR";
-
+public final class SunshineWatchFaceUtil {
+    private static final String TAG = "SunshineWatchFaceUtil";
     public static final String PATH_WITH_FEATURE = "/watch_face_config/Digital";
 
     /**
      * Name of the default interactive mode background color and the ambient mode background color.
      */
-    public static final String COLOR_NAME_DEFAULT_AND_AMBIENT_BACKGROUND = "Black";
+    public static final String COLOR_NAME_DEFAULT_AND_AMBIENT_BACKGROUND = "#03A9F4";
     public static final int COLOR_VALUE_DEFAULT_AND_AMBIENT_BACKGROUND =
         parseColor(COLOR_NAME_DEFAULT_AND_AMBIENT_BACKGROUND);
 
@@ -70,14 +49,45 @@ public final class DigitalWatchFaceUtil {
      * Name of the default interactive mode second digits color and the ambient mode second digits
      * color.
      */
-    public static final String COLOR_NAME_DEFAULT_AND_AMBIENT_SECOND_DIGITS = "Gray";
+    public static final String COLOR_NAME_DEFAULT_AND_AMBIENT_SECOND_DIGITS = "White";
     public static final int COLOR_VALUE_DEFAULT_AND_AMBIENT_SECOND_DIGITS =
         parseColor(COLOR_NAME_DEFAULT_AND_AMBIENT_SECOND_DIGITS);
+
+
+    //FIXME Not sure why using R.color doesn't work. Looks like we need to use parseColor to render it properly.
+    //FIXME Udacity Discussion : https://discussions.udacity.com/t/android-wear-what-am-i-missing-here-i-am-seeing-a-blank-watch-face-need-help/227573
+//    /**
+//     * Name of the default interactive mode background color and the ambient mode background color.
+//     */
+//    @ColorInt
+//    public static final int COLOR_VALUE_DEFAULT_AND_AMBIENT_BACKGROUND = R.color.black;
+//
+//    /**
+//     * Name of the default interactive mode hour digits color and the ambient mode hour digits
+//     * color.
+//     */
+//    @ColorInt
+//    public static final int COLOR_VALUE_DEFAULT_AND_AMBIENT_HOUR_DIGITS = R.color.white;
+//
+//    /**
+//     * Name of the default interactive mode minute digits color and the ambient mode minute digits
+//     * color.
+//     */
+//    @ColorInt
+//    public static final int COLOR_VALUE_DEFAULT_AND_AMBIENT_MINUTE_DIGITS = R.color.white;
+//
+//    /**
+//     * Name of the default interactive mode second digits color and the ambient mode second digits
+//     * color.
+//     */
+//    @ColorInt
+//    public static final int COLOR_VALUE_DEFAULT_AND_AMBIENT_SECOND_DIGITS = R.color.grey;
+//
 
     private static int parseColor(String colorName) {
         return Color.parseColor(colorName.toLowerCase());
     }
 
-    private DigitalWatchFaceUtil() {
+    private SunshineWatchFaceUtil() {
     }
 }

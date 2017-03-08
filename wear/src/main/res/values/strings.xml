@@ -15,15 +15,7 @@
 -->
 <resources>
     <string name="app_name">WatchFace</string>
-    <string name="opengl_name">Sample OpenGL</string>
-    <string name="interactive_name">Sample Interactive</string>
-    <string name="analog_name">Sample Analog</string>
-    <string name="complication_simple">Sample Complication Simple</string>
-    <string name="sweep_name">Sample Sweep</string>
-    <string name="card_bounds_name">Sample Card Bounds</string>
-    <string name="digital_name">Sample Digital</string>
-    <string name="digital_background_color">Background color</string>
-    <string name="digital_config_name">Digital watch face configuration</string>
+    <string name="digital_name">Sunshine</string>
     <string name="digital_am">AM</string>
     <string name="digital_pm">PM</string>
 </resources>
