@@ -163,8 +163,12 @@ public class SunshineSyncTask {
             double high = cursor.getDouble(IConstants.INDEX_MAX_TEMP);
             double low = cursor.getDouble(IConstants.INDEX_MIN_TEMP);
 
+            int smallArtResourceId = SunshineWeatherUtils
+                .getSmallArtResourceIdForWeatherCondition(weatherId);
+
             PutDataMapRequest dataMap = PutDataMapRequest.create(IConstants.PATH_WITH_FEATURE);
             dataMap.getDataMap().putLong("time", new Date().getTime());  //Requires as if the data doesn't change, then Wearable API doesnt send the data to wear. This forces the data to be sent each time.
+//            dataMap.getDataMap().putAsset(IConstants.WEATHER_IMAGE_PATH, SunshineWeatherUtils.toAsset(context, smallArtResourceId));
             dataMap.getDataMap().putInt(IConstants.WEATHER_IMAGE_PATH, weatherId);
             //One advantage of using formattedHighlows is that, it will automatically change the watch high/low data to celsius / fahrenheit when the settings changes on app.
             dataMap.getDataMap().putString(IConstants.WEATHER_FORMATTED_HIGH_LOW, SunshineWeatherUtils.formatHighLows(context, high, low));

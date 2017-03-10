@@ -113,10 +113,8 @@ public final class OpenWeatherJsonUtils {
          * Since this data is also sent in-order and the first day is always the current day, we're
          * going to take advantage of that to get a nice normalized UTC date for all of our weather.
          */
-//        long now = System.currentTimeMillis();
-//        long normalizedUtcStartDay = SunshineDateUtils.normalizeDate(now);
-
-        long normalizedUtcStartDay = SunshineDateUtils.getNormalizedUtcDateForToday();
+        long now = System.currentTimeMillis();
+        long normalizedUtcStartDay = SunshineDateUtils.normalizeDate(now);
 
         for (int i = 0; i < jsonWeatherArray.length(); i++) {
 

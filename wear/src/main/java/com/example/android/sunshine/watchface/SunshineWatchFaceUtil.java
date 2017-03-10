@@ -131,22 +131,6 @@ public final class SunshineWatchFaceUtil {
         return R.drawable.ic_clear;
     }
 
-    public static String formatTemperature(Context context, double temperature, boolean isMetric) {
-        if (!isMetric) {
-            temperature = celsiusToFahrenheit(temperature);
-        }
-
-        int temperatureFormatResourceId = R.string.format_temperature;
-
-        /* For presentation, assume the user doesn't care about tenths of a degree. */
-        return String.format(context.getString(temperatureFormatResourceId), temperature);
-    }
-
-    private static double celsiusToFahrenheit(double temperatureInCelsius) {
-        double temperatureInFahrenheit = (temperatureInCelsius * 1.8) + 32;
-        return temperatureInFahrenheit;
-    }
-
     private SunshineWatchFaceUtil() {
     }
 }
