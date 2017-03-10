@@ -30,6 +30,7 @@ import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -320,7 +321,7 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
 
             mYOffset = resources.getDimension(isRound
                 ? R.dimen.digital_y_offset_round : R.dimen.digital_y_offset);
-            mXHorizontalLineOffset =resources.getDimension(isRound
+            mXHorizontalLineOffset = resources.getDimension(isRound
                 ? R.dimen.digital_x_offset_horizontal_line_round : R.dimen.digital_x_offset_horizontal_line);
             mXOffsetDate = resources.getDimension(isRound
                 ? R.dimen.digital_x_offset_date_round : R.dimen.digital_x_offset_date);
@@ -403,7 +404,7 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
 
             if (mWeatherIcon != null) {
                 /* Scale loaded background image (more efficient) if surface dimensions change. */
-                float scale = ((float) width) / (float) mWeatherIcon.getWidth();
+                float scale = ((float) width) / ((float) mWeatherIcon.getWidth());
 
                 mWeatherIcon = Bitmap.createScaledBitmap(mWeatherIcon,
                     (int) (mWeatherIcon.getWidth() * scale),
@@ -550,6 +551,7 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
 
                 //Draw weather details
                 x = mXOffset + 10;
+
                 if (mWeatherIcon != null && !TextUtils.isEmpty(mFormattedHighLow)) {
                     Bitmap image;
                     if (isInAmbientMode()) {
@@ -602,11 +604,22 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
                 DataMapItem dataMapItem = DataMapItem.fromDataItem(dataItem);
                 DataMap dataMap = dataMapItem.getDataMap();
 
-                weatherId = dataMap.getInt(SunshineWatchFaceUtil.WEATHER_IMAGE_PATH);
-                mWeatherIcon = BitmapFactory.decodeResource(getResources(), SunshineWatchFaceUtil.getSmallArtResourceIdForWeatherCondition(weatherId));
                 mFormattedHighLow = dataMap.getString(SunshineWatchFaceUtil.WEATHER_FORMATTED_HIGH_LOW);
 
+//                Asset photoAsset = dataMap.getAsset(SunshineWatchFaceUtil.WEATHER_IMAGE_PATH);
+//                loadBitmapFromAsset(photoAsset, new AsyncResponse() {
+//                    @Override
+//                    public void processFinish(Bitmap output) {
+//                        //FIXME working but not able to scale it properly
+//                        mWeatherIcon = output;
+//                        invalidate();
+//                    }
+//                });
+
+                weatherId = dataMap.getInt(SunshineWatchFaceUtil.WEATHER_IMAGE_PATH);
+                mWeatherIcon = BitmapFactory.decodeResource(getResources(), SunshineWatchFaceUtil.getSmallArtResourceIdForWeatherCondition(weatherId));
                 invalidate();
+
             }
         }
 
@@ -626,26 +639,52 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             Log.d(TAG, "onConnectionFailed: " + result);
         }
 
-        public Bitmap loadBitmapFromAsset(Asset asset) {
-            if (asset == null) {
-                throw new IllegalArgumentException("Asset must be non-null");
+        public void loadBitmapFromAsset(final Asset asset, AsyncResponse response) {
+            if (asset == null || response == null) {
+                throw new IllegalArgumentException("Asset or AsyncResponse delegate must be non-null");
             }
-            ConnectionResult result =
-                mGoogleApiClient.blockingConnect(TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            if (!result.isSuccess()) {
-                return null;
-            }
-            // convert asset into a file descriptor and block until it's ready
-            InputStream assetInputStream = Wearable.DataApi.getFdForAsset(
-                mGoogleApiClient, asset).await().getInputStream();
-            mGoogleApiClient.disconnect();
 
-            if (assetInputStream == null) {
-                Log.w(TAG, "Requested an unknown Asset.");
-                return null;
+            class LoadAssetAsyncTask extends AsyncTask<Void, Void, InputStream> {
+
+                public AsyncResponse delegate = null;//Call back interface
+
+                private LoadAssetAsyncTask(AsyncResponse delegate) {
+                    this.delegate = delegate;
+                }
+
+                @Override
+                protected InputStream doInBackground(Void... voids) {
+                    ConnectionResult result =
+                        mGoogleApiClient.blockingConnect(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                    if (!result.isSuccess()) {
+                        return null;
+                    }
+                    // convert asset into a file descriptor and block until it's ready
+                    return Wearable.DataApi.getFdForAsset(
+                        mGoogleApiClient, asset).await().getInputStream();
+                }
+
+                @Override
+                protected void onPostExecute(InputStream inputStream) {
+                    super.onPostExecute(inputStream);
+
+                    mGoogleApiClient.disconnect();
+
+                    if (inputStream == null) {
+                        Log.w(TAG, "Requested an unknown Asset.");
+                        delegate.processFinish(null);
+                    }
+                    // decode the stream into a bitmap
+                    delegate.processFinish(BitmapFactory.decodeStream(inputStream));
+                }
             }
-            // decode the stream into a bitmap
-            return BitmapFactory.decodeStream(assetInputStream);
+            LoadAssetAsyncTask loadAssetAsyncTask = new LoadAssetAsyncTask(response);
+            loadAssetAsyncTask.execute();
         }
+    }
+
+    // you may separate this or combined to caller class.
+    interface AsyncResponse {
+        void processFinish(Bitmap output);
     }
 }
